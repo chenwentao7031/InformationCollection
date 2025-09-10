@@ -25,6 +25,7 @@ app.use(cors({
 app.use(express.json());
 
 const APIKEY = process.env.YOUTUBE_API_KEY;
+console.log(APIKEY)
 
 // 🔍 搜索频道（博主）
 app.get('/api/search/video', async (req: Request, res: Response<any>) => {
