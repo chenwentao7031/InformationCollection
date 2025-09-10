@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube 频道搜索工具</title>
+  <link rel="stylesheet" href="https://unpkg.com/antd@4.24.15/dist/antd.css">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/antd@4.24.15/dist/antd.js"></script>
+  
+  <script type="text/babel">
+    // 检查 antd 是否正确加载
+    if (typeof antd === 'undefined') {
+      console.error('Antd 未正确加载!');
+      document.getElementById('root').innerHTML = '<div style="padding: 20px; color: red;">Antd 加载失败，请检查网络连接</div>';
+    } else {
+      console.log('Antd 加载成功:', Object.keys(antd));
+    }
+    
+    const { useState, useEffect } = React;
+    const { Input, Select, Button, Card, Spin, Tag, Space, Row, Col, Typography, Badge, message } = antd;
+    const { Title, Paragraph, Text } = Typography;
+    
+    function App() {
+      const [searchQuery, setSearchQuery] = useState('');
+      const [searchType, setSearchType] = useState('1');
+      const [loading, setLoading] = useState(false);
+      const [results, setResults] = useState(null);
+      const [expandedItems, setExpandedItems] = useState(new Set());
+      
+      const handleSearch = async () => {
+        if (!searchQuery.trim()) {
+          message.warning('请输入搜索关键词');
+          return;
+        }
+        
+        setLoading(true);
+        try {
+          const response = await axios.get('/api/search/video', {
+            params: {
+              q: searchQuery,
+              type: searchType
+            }
+          });
+          setResults(response.data);
+          message.success(`搜索完成，找到 ${response.data.results?.length || 0} 个频道`);
+        } catch (error) {
+          console.error('搜索失败:', error);
+          message.error('搜索失败，请稍后重试');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      const toggleDescription = (index) => {
+        const newExpanded = new Set(expandedItems);
+        if (newExpanded.has(index)) {
+          newExpanded.delete(index);
+        } else {
+          newExpanded.add(index);
+        }
+        setExpandedItems(newExpanded);
+      };
+      
+      const formatNumber = (num) => {
+        if (!num) return '0';
+        const number = parseInt(num);
+        if (number >= 1000000) {
+          return (number / 1000000).toFixed(1) + 'M';
+        }
+        if (number >= 1000) {
+          return (number / 1000).toFixed(1) + 'K';
+        }
+        return number.toString();
+      };
+      
+      const renderChannelItem = (channel, index) => {
+        const isExpanded = expandedItems.has(index);
+        const hasDescription = channel.description && channel.description.length > 200;
+        
+        return (
+          <Card 
+            key={index}
+            className="channel-card"
+            style={{ marginBottom: 16 }}
+            hoverable
+          >
+            <Title level={4} style={{ marginBottom: 16 }}>
+              {channel.title}
+            </Title>
+            
+            {channel.email && channel.email.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <Text strong>📧 联系邮箱: </Text>
+                <Space wrap>
+                  {channel.email.map((email, idx) => (
+                    <Tag key={idx} color="success">{email}</Tag>
+                  ))}
+                </Space>
+              </div>
+            )}
+            
+            <Row gutter={[16, 8]} style={{ marginBottom: 16 }}>
+              {channel.subscriberCount && (
+                <Col xs={12} sm={6}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>订阅数</Text>
+                    <Text strong>👥 {formatNumber(channel.subscriberCount)}</Text>
+                  </div>
+                </Col>
+              )}
+              {channel.viewCount && (
+                <Col xs={12} sm={6}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>总观看数</Text>
+                    <Text strong>👀 {formatNumber(channel.viewCount)}</Text>
+                  </div>
+                </Col>
+              )}
+              {channel.videoCount && (
+                <Col xs={12} sm={6}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>视频数</Text>
+                    <Text strong>🎬 {formatNumber(channel.videoCount)}</Text>
+                  </div>
+                </Col>
+              )}
+              {channel.customUrl && (
+                <Col xs={12} sm={6}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>自定义URL</Text>
+                    <Text code>🔗 {channel.customUrl}</Text>
+                  </div>
+                </Col>
+              )}
+            </Row>
+            
+            {channel.description && (
+              <div>
+                <Paragraph 
+                  ellipsis={!isExpanded && hasDescription ? { rows: 3 } : false}
+                  style={{ 
+                    backgroundColor: '#fafafa', 
+                    padding: '12px', 
+                    borderRadius: '6px',
+                    marginBottom: 0
+                  }}
+                >
+                  {channel.description}
+                </Paragraph>
+                {hasDescription && (
+                  <Button 
+                    type="link" 
+                    size="small"
+                    onClick={() => toggleDescription(index)}
+                    style={{ padding: '4px 0', height: 'auto' }}
+                  >
+                    {isExpanded ? '收起' : '展开'}
+                  </Button>
+                )}
+              </div>
+            )}
+          </Card>
+        );
+      };
+      
+      return (
+        <div className="container">
+          <div className="header">
+            <Title level={1} style={{ color: 'white', textAlign: 'center', marginBottom: 8 }}>
+              🎥 YouTube 频道搜索工具
+            </Title>
+            <Paragraph style={{ color: 'white', textAlign: 'center', opacity: 0.9, fontSize: '18px' }}>
+              搜索 YouTube 频道并获取联系邮箱信息
+            </Paragraph>
+          </div>
+          
+          <Card className="search-card" style={{ marginBottom: 24 }}>
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <Row gutter={16} align="bottom">
+                <Col xs={24} sm={12} md={8}>
+                  <div>
+                    <Text strong style={{ marginBottom: 8, display: 'block' }}>搜索关键词</Text>
+                    <Input
+                      size="large"
+                      placeholder="请输入搜索关键词，如：美食博主、科技评测..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onPressEnter={handleSearch}
+                      prefix={<span>🔍</span>}
+                    />
+                  </div>
+                </Col>
+                
+                <Col xs={24} sm={8} md={6}>
+                  <div>
+                    <Text strong style={{ marginBottom: 8, display: 'block' }}>搜索类型</Text>
+                    <Select
+                      size="large"
+                      value={searchType}
+                      onChange={setSearchType}
+                      style={{ width: '100%' }}
+                    >
+                      <Select.Option value="1">仅有邮箱的频道</Select.Option>
+                      <Select.Option value="2">所有频道详情</Select.Option>
+                      <Select.Option value="0">完整数据</Select.Option>
+                    </Select>
+                  </div>
+                </Col>
+                
+                <Col xs={24} sm={4} md={4}>
+                  <Button
+                    type="primary"
+                    size="large"
+                    onClick={handleSearch}
+                    loading={loading}
+                    block
+                    className="gradient-btn"
+                    style={{ height: '40px' }}
+                  >
+                    {loading ? '搜索中...' : '🔍 搜索'}
+                  </Button>
+                </Col>
+              </Row>
+            </Space>
+          </Card>
+          
+          {loading && (
+            <Card style={{ textAlign: 'center', marginBottom: 24 }}>
+              <Spin size="large" />
+              <div style={{ marginTop: 16 }}>
+                <Text>🔍 正在搜索中，请稍候...</Text>
+              </div>
+            </Card>
+          )}
+          
+          {results && !loading && (
+            <Card title={
+              <Space>
+                <Text strong style={{ fontSize: '18px' }}>
+                  搜索结果: {results.results?.length || 0} 个频道
+                </Text>
+                {results.count > 0 && (
+                  <Badge 
+                    count={`${results.count} 个有邮箱`} 
+                    style={{ 
+                      backgroundColor: '#52c41a',
+                      fontSize: '12px'
+                    }} 
+                  />
+                )}
+              </Space>
+            }>
+              {results.results && results.results.length > 0 ? (
+                results.results.map((channel, index) => renderChannelItem(channel, index))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <Text type="secondary" style={{ fontSize: '16px' }}>
+                    😅 没有找到相关频道，请尝试其他关键词
+                  </Text>
+                </div>
+              )}
+            </Card>
+          )}
+        </div>
+      );
+    }
+    
+    const container = document.getElementById('root');
+    if (ReactDOM.createRoot) {
+      // React 18
+      const root = ReactDOM.createRoot(container);
+      root.render(<App />);
+    } else {
+      // React 17 及以下
+      ReactDOM.render(<App />, container);
+    }
+  </script>
+</body>
+</html>

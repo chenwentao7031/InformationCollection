@@ -4,9 +4,12 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "http-server -p 8000"
+    "dev": "nodemon",
+    "build": "tsc",
+    "start": "node -r tsconfig-paths/register dist/server.js"
   },
   "dependencies": {
+    "@types/axios": "^0.14.4",
     "axios": "^1.11.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
@@ -15,6 +18,7 @@
     "node-fetch": "^3.3.2",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.2"
   },
   "devDependencies": {
