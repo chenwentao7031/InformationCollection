@@ -111,6 +111,7 @@ app.get('/api/search/video', async (req: Request, res: Response<any>) => {
     } else {
       res.json({
         query: q,
+        origin: channels,
         totalResults: data.pageInfo?.totalResults || 0,
         results: uniqueChannels,
         details: filteredChannelDetails,

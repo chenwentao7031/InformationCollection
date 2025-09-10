@@ -15,6 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/antd@4.24.15/dist/antd.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   
   <script type="text/babel">
     // 检查 antd 是否正确加载
@@ -26,15 +27,16 @@
     }
     
     const { useState, useEffect } = React;
-    const { Input, Select, Button, Card, Spin, Tag, Space, Row, Col, Typography, Badge, message } = antd;
+    const { Input, Select, Button, Card, Spin, Tag, Space, Row, Col, Typography, Badge, message, Table } = antd;
     const { Title, Paragraph, Text } = Typography;
     
     function App() {
       const [searchQuery, setSearchQuery] = useState('');
       const [searchType, setSearchType] = useState('1');
+      const [searchRange, setSearchRange] = useState('50');
       const [loading, setLoading] = useState(false);
       const [results, setResults] = useState(null);
-      const [expandedItems, setExpandedItems] = useState(new Set());
+      const [tableData, setTableData] = useState([]);
       
       const handleSearch = async () => {
         if (!searchQuery.trim()) {
@@ -47,10 +49,27 @@
           const response = await axios.get('/api/search/video', {
             params: {
               q: searchQuery,
-              type: searchType
+              type: searchType,
+              range: searchRange
             }
           });
           setResults(response.data);
+          
+          // 处理数据以适配表格
+          const processedData = response.data.results?.map((channel, index) => ({
+            key: index,
+            title: channel.title || '未知',
+            emails: channel.email || [],
+            emailsText: (channel.email || []).join(', '),
+            subscriberCount: channel.subscriberCount || '0',
+            viewCount: channel.viewCount || '0',
+            videoCount: channel.videoCount || '0',
+            customUrl: channel.customUrl || '',
+            description: channel.description || '',
+            keywords: channel.keywords || ''
+          })) || [];
+          
+          setTableData(processedData);
           message.success(`搜索完成，找到 ${response.data.results?.length || 0} 个频道`);
         } catch (error) {
           console.error('搜索失败:', error);
@@ -58,16 +77,6 @@
         } finally {
           setLoading(false);
         }
-      };
-      
-      const toggleDescription = (index) => {
-        const newExpanded = new Set(expandedItems);
-        if (newExpanded.has(index)) {
-          newExpanded.delete(index);
-        } else {
-          newExpanded.add(index);
-        }
-        setExpandedItems(newExpanded);
       };
       
       const formatNumber = (num) => {
@@ -82,95 +91,151 @@
         return number.toString();
       };
       
-      const renderChannelItem = (channel, index) => {
-        const isExpanded = expandedItems.has(index);
-        const hasDescription = channel.description && channel.description.length > 200;
+      // Excel导出功能
+      const exportToExcel = () => {
+        if (!tableData.length) {
+          message.warning('没有数据可以导出');
+          return;
+        }
         
-        return (
-          <Card 
-            key={index}
-            className="channel-card"
-            style={{ marginBottom: 16 }}
-            hoverable
-          >
-            <Title level={4} style={{ marginBottom: 16 }}>
-              {channel.title}
-            </Title>
-            
-            {channel.email && channel.email.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>📧 联系邮箱: </Text>
-                <Space wrap>
-                  {channel.email.map((email, idx) => (
-                    <Tag key={idx} color="success">{email}</Tag>
-                  ))}
-                </Space>
-              </div>
-            )}
-            
-            <Row gutter={[16, 8]} style={{ marginBottom: 16 }}>
-              {channel.subscriberCount && (
-                <Col xs={12} sm={6}>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>订阅数</Text>
-                    <Text strong>👥 {formatNumber(channel.subscriberCount)}</Text>
-                  </div>
-                </Col>
-              )}
-              {channel.viewCount && (
-                <Col xs={12} sm={6}>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>总观看数</Text>
-                    <Text strong>👀 {formatNumber(channel.viewCount)}</Text>
-                  </div>
-                </Col>
-              )}
-              {channel.videoCount && (
-                <Col xs={12} sm={6}>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>视频数</Text>
-                    <Text strong>🎬 {formatNumber(channel.videoCount)}</Text>
-                  </div>
-                </Col>
-              )}
-              {channel.customUrl && (
-                <Col xs={12} sm={6}>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>自定义URL</Text>
-                    <Text code>🔗 {channel.customUrl}</Text>
-                  </div>
-                </Col>
-              )}
-            </Row>
-            
-            {channel.description && (
-              <div>
-                <Paragraph 
-                  ellipsis={!isExpanded && hasDescription ? { rows: 3 } : false}
-                  style={{ 
-                    backgroundColor: '#fafafa', 
-                    padding: '12px', 
-                    borderRadius: '6px',
-                    marginBottom: 0
-                  }}
-                >
-                  {channel.description}
-                </Paragraph>
-                {hasDescription && (
-                  <Button 
-                    type="link" 
-                    size="small"
-                    onClick={() => toggleDescription(index)}
-                    style={{ padding: '4px 0', height: 'auto' }}
-                  >
-                    {isExpanded ? '收起' : '展开'}
-                  </Button>
-                )}
-              </div>
-            )}
-          </Card>
-        );
+        // 准备导出数据
+        const exportData = tableData.map((row, index) => ({
+          '序号': index + 1,
+          '频道名称': row.title,
+          '联系邮箱': row.emailsText,
+          '订阅数': row.subscriberCount,
+          '总观看数': row.viewCount,
+          '视频数': row.videoCount,
+          '自定义URL': row.customUrl,
+          '关键词': row.keywords,
+          '描述': row.description 
+        }));
+        
+        // 创建工作簿
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '频道信息');
+        
+        // 设置列宽
+        const colWidths = [
+          { wch: 6 },   // 序号
+          { wch: 30 },  // 频道名称
+          { wch: 40 },  // 联系邮箱
+          { wch: 12 },  // 订阅数
+          { wch: 15 },  // 总观看数
+          { wch: 10 },  // 视频数
+          { wch: 25 },  // 自定义URL
+          { wch: 20 },  // 关键词
+          { wch: 80 }   // 描述
+        ];
+        ws['!cols'] = colWidths;
+        
+        // 下载文件
+        const fileName = `YouTube频道信息_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        
+        message.success(`成功导出 ${tableData.length} 条记录到 ${fileName}`);
       };
+      
+      // 定义表格列
+      const columns = [
+        {
+          title: '序号',
+          key: 'index',
+          width: 60,
+          render: (text, record, index) => index + 1,
+          align: 'center'
+        },
+        {
+          title: '频道名称',
+          dataIndex: 'title',
+          key: 'title',
+          width: 250,
+          ellipsis: true,
+          render: (text) => (
+            <Text strong style={{ fontSize: '16px' }}>{text}</Text>
+          )
+        },
+        {
+          title: '联系邮箱',
+          dataIndex: 'emails',
+          key: 'emails',
+          width: 300,
+          render: (emails) => (
+            <Space direction="vertical" size="small">
+              {emails.length > 0 ? (
+                emails.map((email, idx) => (
+                  <Tag key={idx} color="success" style={{ margin: '2px 4px 2px 0' }}>
+                    📧 {email}
+                  </Tag>
+                ))
+              ) : (
+                <Text type="secondary">无邮箱信息</Text>
+              )}
+            </Space>
+          )
+        },
+        {
+          title: '订阅数',
+          dataIndex: 'subscriberCount',
+          key: 'subscriberCount',
+          width: 100,
+          align: 'right',
+          sorter: (a, b) => parseInt(a.subscriberCount) - parseInt(b.subscriberCount),
+          render: (count) => (
+            <Text strong>👥 {formatNumber(count)}</Text>
+          )
+        },
+        {
+          title: '总观看数',
+          dataIndex: 'viewCount',
+          key: 'viewCount',
+          width: 120,
+          align: 'right',
+          sorter: (a, b) => parseInt(a.viewCount) - parseInt(b.viewCount),
+          render: (count) => (
+            <Text strong>👀 {formatNumber(count)}</Text>
+          )
+        },
+        {
+          title: '视频数',
+          dataIndex: 'videoCount',
+          key: 'videoCount',
+          width: 80,
+          align: 'right',
+          sorter: (a, b) => parseInt(a.videoCount) - parseInt(b.videoCount),
+          render: (count) => (
+            <Text strong>🎬 {formatNumber(count)}</Text>
+          )
+        },
+        {
+          title: '自定义URL',
+          dataIndex: 'customUrl',
+          key: 'customUrl',
+          width: 180,
+          ellipsis: true,
+          render: (url) => url ? (
+            <Text code>{url}</Text>
+          ) : (
+            <Text type="secondary">无</Text>
+          )
+        },
+        {
+          title: '频道描述',
+          dataIndex: 'description',
+          key: 'description',
+          render: (description) => (
+            <div style={{ width: 200 }}>
+              <Paragraph
+              ellipsis={{ rows: 2, expandable: true, symbol: '更多' }}
+              style={{ marginBottom: 0, fontSize: '12px'}}
+            >
+              {description || '无描述信息'}
+            </Paragraph>
+            </div>
+          )
+        }
+      ];
       
       return (
         <div className="container">
@@ -190,6 +255,7 @@
                   <div>
                     <Text strong style={{ marginBottom: 8, display: 'block' }}>搜索关键词</Text>
                     <Input
+                      allowClear
                       size="large"
                       placeholder="请输入搜索关键词，如：美食博主、科技评测..."
                       value={searchQuery}
@@ -211,7 +277,23 @@
                     >
                       <Select.Option value="1">仅有邮箱的频道</Select.Option>
                       <Select.Option value="2">所有频道详情</Select.Option>
-                      <Select.Option value="0">完整数据</Select.Option>
+                    </Select>
+                  </div>
+                </Col>
+
+                <Col xs={24} sm={8} md={6}>
+                  <div>
+                    <Text strong style={{ marginBottom: 8, display: 'block' }}>搜索范围</Text>
+                    <Select
+                      size="large"
+                      value={searchRange}
+                      onChange={setSearchRange}
+                      style={{ width: '100%' }}
+                    >
+                      <Select.Option value="50">50条</Select.Option>
+                      <Select.Option value="100">100条</Select.Option>
+                      <Select.Option value="200">200条</Select.Option>
+                      <Select.Option value="500">500条</Select.Option>
                     </Select>
                   </div>
                 </Col>
@@ -243,24 +325,52 @@
           )}
           
           {results && !loading && (
-            <Card title={
-              <Space>
-                <Text strong style={{ fontSize: '18px' }}>
-                  搜索结果: {results.results?.length || 0} 个频道
-                </Text>
-                {results.count > 0 && (
-                  <Badge 
-                    count={`${results.count} 个有邮箱`} 
-                    style={{ 
-                      backgroundColor: '#52c41a',
-                      fontSize: '12px'
-                    }} 
-                  />
-                )}
-              </Space>
-            }>
-              {results.results && results.results.length > 0 ? (
-                results.results.map((channel, index) => renderChannelItem(channel, index))
+            <Card 
+              title={
+                <Space>
+                  <Text strong style={{ fontSize: '18px' }}>
+                    搜索结果: {tableData.length} 个频道
+                  </Text>
+                  {results.count > 0 && (
+                    <Badge 
+                      count={`${results.count} 个有邮箱`} 
+                      style={{ 
+                        backgroundColor: '#52c41a',
+                        fontSize: '12px'
+                      }} 
+                    />
+                  )}
+                </Space>
+              }
+              extra={
+                <Button
+                  type="primary"
+                  icon="📊"
+                  onClick={exportToExcel}
+                  disabled={!tableData.length}
+                  className="gradient-btn"
+                >
+                  导出Excel
+                </Button>
+              }
+            >
+              {tableData.length > 0 ? (
+                <Table
+                  columns={columns}
+                  dataSource={tableData}
+                  scroll={{ x: 'max-content', y: 600 }}
+                  pagination={{
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) => 
+                      `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    defaultPageSize: 10
+                  }}
+                  size="middle"
+                  bordered
+                  style={{ marginTop: 16 }}
+                />
               ) : (
                 <div style={{ textAlign: 'center', padding: '60px 20px' }}>
                   <Text type="secondary" style={{ fontSize: '16px' }}>
