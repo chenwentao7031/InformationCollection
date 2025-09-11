@@ -89,3 +89,48 @@ export interface YouTubeApiError {
     }>;
   };
 }
+
+// 用户详情获取相关类型
+export interface ChannelWithEmails {
+  channelId: string;
+  title: string;
+  description: string;
+  customUrl?: string;
+  subscribers: string;
+  views: string;
+  videos: string;
+  thumbnail: string;
+  emails: string[];
+  keywords?: string;
+}
+
+export interface UserDetailTask {
+  taskId: string;
+  query: string;
+  type: '1' | '2'; // 1: 仅有邮箱的频道, 2: 所有频道
+  count: number;
+  status: 'running' | 'completed' | 'stopped' | 'error';
+  progress: number; // 0-100
+  currentCount: number;
+  totalFound: number;
+  results: ChannelWithEmails[];
+  error?: string;
+  startTime: number;
+  nextPageToken?: string;
+}
+
+export interface UserDetailRequest {
+  q: string;
+  type: '1' | '2';
+  count: number;
+}
+
+export interface UserDetailResponse {
+  taskId: string;
+  status: 'started' | 'running' | 'completed' | 'stopped' | 'error';
+  progress: number;
+  currentCount: number;
+  totalFound: number;
+  results: ChannelWithEmails[];
+  error?: string;
+}

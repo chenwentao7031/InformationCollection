@@ -66,6 +66,22 @@ export const healthCheckService = async (): Promise<{ status: string; message: s
   return response.data;
 };
 
+// 开启查询用户获取taskId
+export const startUserDetailService = async (query: string, type: string, count: number): Promise<any> => {
+  const response = await api.post('/api/user-details/start', {
+    q: query,
+    type: type,
+    count: count
+  });
+  return response.data;
+};
+
+// 轮询用户信息列表
+export const pollUserDetailService = async (taskId: string): Promise<any> => {
+  const response = await api.get(`/api/user-details/status/${taskId}`);
+  return response.data;
+};
+
 /**
  * YouTube 搜索 Hook
  * 封装了 useRequest，提供搜索功能
@@ -96,6 +112,22 @@ export const useHealthCheck = () => {
   return useRequest(
     healthCheckService,
     defaultOptions
+  );
+};
+
+export const useStartUserDetails = () => {
+  return useRequest(
+    startUserDetailService,
+    defaultOptions
+  );
+};
+export const usePollUserDetails = () => {
+  return useRequest(
+    pollUserDetailService,
+    {
+      ...defaultOptions,
+      pollingInterval: 3000,
+    }
   );
 };
 

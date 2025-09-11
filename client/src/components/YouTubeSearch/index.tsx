@@ -238,6 +238,7 @@ const YouTubeSearch: React.FC = () => {
       {/* 导出Modal */}
       <ExportModal
         visible={exportModalVisible}
+        query={searchQuery}
         onCancel={() => setExportModalVisible(false)}
         videoList={videoList}
       />

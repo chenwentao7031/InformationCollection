@@ -2,13 +2,15 @@ import youtubeApi from './youtubeRequest';
 
 const APIKEY = process.env.YOUTUBE_API_KEY;
 
-export const getVideoList = async ({ q, type }: { q: string, type: string }) => {
+export const getVideoList = async (params: { q: string, type?: string, maxResults?: number, pageToken?: string }) => {
+  const { q, type, maxResults, pageToken } = params;
   const response = await youtubeApi.get('/search', {
     params: {
       part: 'snippet',
       q: q,
-      type: type,
-      maxResults: 20,
+      type: 'video',
+      maxResults: maxResults || 20,
+      ...(pageToken && { pageToken: pageToken }),
       key: APIKEY,
     },
   });
@@ -16,11 +18,18 @@ export const getVideoList = async ({ q, type }: { q: string, type: string }) => 
 }
 
 
-export const getChannelDetail = async (channelId: string) => {
+export const getChannelDetail = async (channelIds: string[]) => {
+    console.log({
+      params:  {
+        part: 'snippet,statistics,brandingSettings',
+        id: channelIds.join(','),
+        key: APIKEY,
+      }
+    }, 'params')
     const response = await youtubeApi.get('/channels', {
       params: {
         part: 'snippet,statistics,brandingSettings',
-        id: channelId,
+        id: channelIds.join(','),
         key: APIKEY,
       },
     });

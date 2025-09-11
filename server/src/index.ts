@@ -9,6 +9,8 @@ import {
   ErrorResponse,
   YouTubeChannelItem,
   YouTubeChannelDetail,
+  UserDetailRequest,
+  UserDetailResponse,
 } from "@/types";
 import {
   getChannelDetail,
@@ -16,6 +18,7 @@ import {
   getVideoList,
 } from "@/apis/youtubeApi";
 import { extractEmails, findEmails } from "@/utils/tool";
+import { taskManager } from "@/utils/TaskManager";
 
 const app = express();
 const PORT = process.env.PORT || 5432;
@@ -53,7 +56,6 @@ app.get(
     try {
       const data = await getVideoList({
         q: q || "",
-        type: "video",
       });
       const videoIds: { channelId: string; videoId: string }[] = data.items
         .filter((item: any) => item.id?.videoId)
@@ -158,51 +160,178 @@ app.get(
   }
 );
 
-// 🧾 获取频道详情
-app.get(
-  "/api/channel/:id",
-  async (req: Request, res: Response<ChannelDetailResult | ErrorResponse>) => {
-    const { id: channelId } = req.params;
+/**
+ * 获取用户详情
+ * params: { q: string, type: '1' | '2', count: number }
+ * 1. 根据查询参数 q 获取视频列表
+ * 2. 根据视频列表过滤获取channelId, 需要去重
+ * 3. 根据channelId获取频道详情，根据type 为 1 过滤有邮箱的channel，2的话全部返回，筛选邮箱使用：findEmails([item?.snippet?.description, item?.snippet?.localized?.description || '', item?.brandingSettings?.description])
+ * 4. 返回count的条数，如果没到，则需要使用第一步请求返回的nextpagetoken拿下一页的数据在进行重新请求，直到达到count的条数
+ * 5. 希望可以进行异步操作，不要阻塞主线程，用户进行轮询，每次返回最新结果，并且返回百分比，已有的count / count * 100
+ * 6. 可以停止任务，返回之前的数据
+ */
 
-    if (!channelId) {
-      return res.status(400).json({ error: "请提供 channelId" });
-    }
-
+/**
+ * 启动用户详情获取任务
+ * POST /api/user-details/start
+ * Body: { q: string, type: '1' | '2', count: number }
+ */
+app.post(
+  "/api/user-details/start",
+  async (req: Request, res: Response<UserDetailResponse | ErrorResponse>) => {
     try {
-      const response = await youtubeApi.get("/channels", {
-        params: {
-          part: "snippet,statistics",
-          id: channelId,
-          key: APIKEY,
-        },
-      });
+      const { q, type, count }: UserDetailRequest = req.body;
 
-      const data = response.data;
-
-      if (!data.items || data.items.length === 0) {
-        return res.status(404).json({ error: "频道不存在" });
+      console.log(req.body)
+      // 参数验证
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: "请提供搜索关键词 q" });
       }
 
-      const channel: YouTubeChannelDetail = data.items[0];
+      if (!type || (type !== '1' && type !== '2')) {
+        return res.status(400).json({ error: "请提供有效的类型参数 (1: 仅有邮箱, 2: 所有频道)" });
+      }
 
-      const result: ChannelDetailResult = {
-        channelId: channel.id,
-        title: channel.snippet.title,
-        description: channel.snippet.description,
-        customUrl: channel.snippet.customUrl,
-        subscribers: channel.statistics.subscriberCount,
-        views: channel.statistics.viewCount,
-        videos: channel.statistics.videoCount,
-        thumbnail: channel.snippet.thumbnails.default.url,
+      if (!count || typeof count !== 'number' || count <= 0) {
+        return res.status(400).json({ error: "请提供有效的数量参数 count (> 0)" });
+      }
+
+      if (count > 5000) {
+        return res.status(400).json({ error: "单次任务最大支持5000条数据" });
+      }
+
+      // 检查是否有过多活跃任务
+      if (taskManager.getActiveTasksCount() >= 10) {
+        return res.status(429).json({ error: "系统繁忙，请稍后再试" });
+      }
+
+      // 创建任务
+      const taskId = taskManager.createTask(q, type, count);
+      const task = taskManager.getTask(taskId);
+
+      if (!task) {
+        return res.status(500).json({ error: "任务创建失败" });
+      }
+
+      const response: UserDetailResponse = {
+        taskId,
+        status: 'started',
+        progress: task.progress,
+        currentCount: task.currentCount,
+        totalFound: task.totalFound,
+        results: task.results,
       };
 
-      res.json(result);
-    } catch (err: any) {
-      console.error("❌ 获取频道详情失败:", err.message);
-      res.status(500).json({ error: "获取频道详情失败：" + err.message });
+      res.json(response);
+      
+      console.log(`✅ 任务已启动: ${taskId}, 查询: "${q}", 类型: ${type}, 目标: ${count}`);
+      
+    } catch (error: any) {
+      console.error("❌ 启动任务失败:", error.message);
+      taskManager.forceClearAllTasks();
+      res.status(500).json({ error: "启动任务失败：" + error.message });
     }
   }
 );
+
+/**
+ * 查询任务状态和结果
+ * GET /api/user-details/status/:taskId
+ */
+app.get(
+  "/api/user-details/status/:taskId",
+  async (req: Request, res: Response<UserDetailResponse | ErrorResponse>) => {
+    try {
+      const { taskId } = req.params;
+
+      if (!taskId) {
+        return res.status(400).json({ error: "请提供任务ID" });
+      }
+
+      const task = taskManager.getTask(taskId);
+
+      if (!task) {
+        return res.status(404).json({ error: "任务不存在或已过期" });
+      }
+
+      const response: UserDetailResponse = {
+        taskId: task.taskId,
+        status: task.status,
+        progress: task.progress,
+        currentCount: task.currentCount,
+        totalFound: task.totalFound,
+        results: task.results,
+        error: task.error,
+      };
+
+      res.json(response);
+      
+    } catch (error: any) {
+      console.error("❌ 查询任务状态失败:", error.message);
+      res.status(500).json({ error: "查询任务状态失败：" + error.message });
+    }
+  }
+);
+
+/**
+ * 停止任务
+ * DELETE /api/user-details/stop/:taskId
+ */
+app.delete(
+  "/api/user-details/stop/:taskId",
+  async (req: Request, res: Response<UserDetailResponse | ErrorResponse>) => {
+    try {
+      const { taskId } = req.params;
+
+      if (!taskId) {
+        return res.status(400).json({ error: "请提供任务ID" });
+      }
+
+      const success = taskManager.stopTask(taskId);
+
+      if (!success) {
+        return res.status(404).json({ error: "任务不存在或无法停止" });
+      }
+
+      const task = taskManager.getTask(taskId);
+
+      if (!task) {
+        return res.status(404).json({ error: "任务不存在" });
+      }
+
+      const response: UserDetailResponse = {
+        taskId: task.taskId,
+        status: task.status,
+        progress: task.progress,
+        currentCount: task.currentCount,
+        totalFound: task.totalFound,
+        results: task.results,
+        error: task.error,
+      };
+
+      res.json(response);
+      
+      console.log(`⏹️  任务已停止: ${taskId}`);
+      
+    } catch (error: any) {
+      console.error("❌ 停止任务失败:", error.message);
+      res.status(500).json({ error: "停止任务失败：" + error.message });
+    }
+  }
+);
+
+/**
+ * 获取任务管理器统计信息 (调试用)
+ * GET /api/user-details/stats
+ */
+app.get("/api/user-details/stats", (req: Request, res: Response) => {
+  const stats = taskManager.getTasksStats();
+  res.json({
+    message: "任务管理器统计信息",
+    ...stats,
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // 健康检查端点
 app.get("/api/health", (req: Request, res: Response) => {

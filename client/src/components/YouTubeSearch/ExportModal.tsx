@@ -15,6 +15,8 @@ import {
 import { ExportOutlined, EyeOutlined, LikeOutlined, MessageOutlined } from '@ant-design/icons';
 import { exportToExcel } from '@/utils/excel';
 import { VideoData } from '@/types';
+import { usePollUserDetails, useStartUserDetails } from '@/services/api';
+import { formatDate, formatNumber } from '@/utils';
 
 const { Text } = Typography;
 
@@ -22,6 +24,7 @@ interface ExportModalProps {
   visible: boolean;
   onCancel: () => void;
   videoList: VideoData[];
+  query: string;
 }
 
 interface ExportFormData {
@@ -32,44 +35,14 @@ interface ExportFormData {
 const ExportModal: React.FC<ExportModalProps> = ({
   visible,
   onCancel,
-  videoList,
+  query,
 }) => {
   const [form] = Form.useForm<ExportFormData>();
-  const [includeEmail, setIncludeEmail] = useState<boolean>(true);
-  const [exportCount, setExportCount] = useState<number>(10);
   const [exporting, setExporting] = useState(false);
 
-  // 根据选择条件过滤数据
-  const filteredData = useMemo(() => {
-    let data = [...videoList];
-    
-    // 如果选择只包含有邮箱的数据，这里需要根据实际数据结构过滤
-    // 由于当前VideoData没有email字段，这里先保持所有数据
-    if (includeEmail) {
-      // TODO: 如果有邮箱字段，在这里进行过滤
-      // data = data.filter(item => item.email && item.email.length > 0);
-    }
-    
-    // 按选择的数量限制
-    return data.slice(0, exportCount);
-  }, [videoList, includeEmail, exportCount]);
+  const { run: startUserDetail } = useStartUserDetails();
+  const { run: pollUserDetail } = usePollUserDetails();
 
-  const formatNumber = (num: string | number) => {
-    if (!num) return '0';
-    const number = parseInt(num.toString());
-    if (number >= 1000000) {
-      return (number / 1000000).toFixed(1) + 'M';
-    }
-    if (number >= 1000) {
-      return (number / 1000).toFixed(1) + 'K';
-    }
-    return number.toString();
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '未知时间';
-    return new Date(dateString).toLocaleDateString('zh-CN');
-  };
 
   // 表格列定义
   const columns = [
@@ -126,15 +99,14 @@ const ExportModal: React.FC<ExportModalProps> = ({
         </Space>
       ),
     },
-    // 预留邮箱列，如果有邮箱数据的话
-    ...(includeEmail ? [{
+    {
       title: '联系邮箱',
       key: 'email',
       width: 200,
       render: () => (
         <Text type="secondary">暂无邮箱信息</Text>
       ),
-    }] : []),
+    }
   ];
 
   // 执行导出
@@ -165,13 +137,8 @@ const ExportModal: React.FC<ExportModalProps> = ({
     }
   };
 
-  const handleFormChange = (changedValues: any) => {
-    if ('includeEmail' in changedValues) {
-      setIncludeEmail(changedValues.includeEmail);
-    }
-    if ('exportCount' in changedValues) {
-      setExportCount(changedValues.exportCount);
-    }
+  const onFinish = async (values: any) => {
+    await startUserDetail(values.q || query, values.includeEmail, values.exportCount);
   };
 
   return (
@@ -189,9 +156,8 @@ const ExportModal: React.FC<ExportModalProps> = ({
             icon={<ExportOutlined />}
             onClick={handleExport}
             loading={exporting}
-            disabled={filteredData.length === 0}
           >
-            导出 Excel ({filteredData.length} 条)
+            导出 Excel条
           </Button>
         </Space>
       }
@@ -201,18 +167,19 @@ const ExportModal: React.FC<ExportModalProps> = ({
         <Form
           form={form}
           layout="inline"
-          onValuesChange={handleFormChange}
+          onFinish={onFinish}
           initialValues={{
-            includeEmail: true,
+            includeEmail: false,
             exportCount: 10,
+            q: query,
           }}
         >
           <Form.Item label="筛选条件" name="includeEmail">
             <Select
               style={{ width: 120 }}
             >
-              <Select.Option value={true}>包含邮箱</Select.Option>
-              <Select.Option value={false}>不包含邮箱</Select.Option>
+              <Select.Option value={'1'}>包含邮箱</Select.Option>
+              <Select.Option value={'2'}>不包含邮箱</Select.Option>
             </Select>
           </Form.Item>
 
@@ -224,14 +191,18 @@ const ExportModal: React.FC<ExportModalProps> = ({
               <Select.Option value={5000}>5000 条</Select.Option>
             </Select>
           </Form.Item>
+
+          <Form.Item label="开始查询">
+            <Button type="primary" htmlType='submit'>开始查询</Button>
+          </Form.Item>
         </Form>
 
         <Divider style={{ margin: '16px 0' }} />
 
         {/* 统计信息 */}
-        <Space>
+        {/* <Space>
           <Text>
-            <Text strong>总数据量：</Text>{videoList.length} 条
+            <Text strong>总数据量：</Text>{filteredData.length} 条
           </Text>
           <Text>
             <Text strong>将导出：</Text>
@@ -244,7 +215,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
               （当前暂无邮箱数据，后续会补充此功能）
             </Text>
           )}
-        </Space>
+        </Space> */}
 
         {/* 预览表格 */}
         <div>
@@ -253,7 +224,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
           </Text>
           <Table
             columns={columns}
-            dataSource={filteredData}
+            dataSource={[]}
             size="small"
             scroll={{ x: 'max-content', y: 400 }}
             pagination={{
