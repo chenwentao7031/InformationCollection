@@ -146,9 +146,10 @@ class TaskManager {
           
           try {
             const channelResponse = await getChannelDetail(batch);
+            console.log(channelResponse)
 
-            const channels: YouTubeChannelDetail[] = channelResponse.data.items || [];
-
+            const channels: YouTubeChannelDetail[] = channelResponse.items || [];
+            
             // 4. 处理频道数据
             for (const channel of channels) {
               if (task.status !== 'running') break;
@@ -193,6 +194,7 @@ class TaskManager {
             }
           } catch (error: any) {
             console.error(`获取频道详情失败 (batch ${i}):`, error.message);
+            task.status = 'stopped';
             // 继续处理其他批次，而不是失败整个任务
           }
         }

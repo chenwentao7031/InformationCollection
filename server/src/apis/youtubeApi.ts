@@ -19,13 +19,6 @@ export const getVideoList = async (params: { q: string, type?: string, maxResult
 
 
 export const getChannelDetail = async (channelIds: string[]) => {
-    console.log({
-      params:  {
-        part: 'snippet,statistics,brandingSettings',
-        id: channelIds.join(','),
-        key: APIKEY,
-      }
-    }, 'params')
     const response = await youtubeApi.get('/channels', {
       params: {
         part: 'snippet,statistics,brandingSettings',
