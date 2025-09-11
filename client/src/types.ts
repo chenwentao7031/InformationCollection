@@ -20,12 +20,18 @@ export interface ChannelDetailResult {
 }
 
 export interface SearchResponse {
-  query: string;
-  totalResults?: number;
-  results: ChannelData[];
-  count: number;
-  emailChannels?: ChannelData[];
-  emailCount?: number;
+  data: {
+    channelId: string;
+    publishedAt: string;
+    title: string;
+    description: string;
+    thumbnailUrl: string;
+    channelTitle: string;
+    viewCount: string;
+    likeCount: string;
+    commentCount: string;
+    videoUrl: string;
+  }[];
 }
 
 export interface ChannelData {
@@ -41,4 +47,49 @@ export interface ChannelData {
 
 export interface ErrorResponse {
   error: string;
+}
+
+// YouTube视频数据接口
+export interface VideoData {
+  channelId: string;
+  publishedAt: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  channelTitle: string;
+  viewCount: string;
+  likeCount: string;
+  commentCount: string;
+  videoUrl: string;
+  key?: number;
+}
+
+// Instagram用户数据接口（预留）
+export interface InstagramUserData {
+  id: string;
+  username: string;
+  fullName: string;
+  biography: string;
+  profilePictureUrl: string;
+  followersCount: string;
+  followingCount: string;
+  postsCount: string;
+  isVerified: boolean;
+  externalUrl?: string;
+  contactEmail?: string[];
+}
+
+// TikTok用户数据接口（预留）
+export interface TikTokUserData {
+  id: string;
+  username: string;
+  displayName: string;
+  biography: string;
+  avatarUrl: string;
+  followersCount: string;
+  followingCount: string;
+  videosCount: string;
+  likesCount: string;
+  isVerified: boolean;
+  contactEmail?: string[];
 }

@@ -1,8 +1,10 @@
 // client/src/services/api.ts
 import axios from 'axios';
+import { useRequest } from 'ahooks';
+import { message } from 'antd';
 import { SearchResponse, ChannelDetailResult } from '@/types';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5432';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,6 +13,16 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+const defaultOptions = {
+  manual: true,
+  onSuccess: (response: any) => {
+    message.success('请求成功');
+  },
+  onError: (error: any) => {
+    message.error(`请求失败：${error.message}`);
+  },
+};
 
 // 请求拦截器
 api.interceptors.request.use(
@@ -34,29 +46,57 @@ api.interceptors.response.use(
   }
 );
 
-export const searchChannels = async (
-  query: string,
-  type: string = '1',
-  range: string = '50'
-): Promise<SearchResponse> => {
+// useRequest 专用的服务函数
+export const searchChannelsService = async (query: string): Promise<SearchResponse> => {
   const response = await api.get('/api/search/video', {
     params: {
-      q: query,
-      type: type,
-      range: range
+      q: query
     }
   });
   return response.data;
 };
 
-export const getChannelDetail = async (channelId: string): Promise<ChannelDetailResult> => {
+export const getChannelDetailService = async (channelId: string): Promise<ChannelDetailResult> => {
   const response = await api.get(`/api/channel/${channelId}`);
   return response.data;
 };
 
-export const healthCheck = async (): Promise<{ status: string; message: string }> => {
+export const healthCheckService = async (): Promise<{ status: string; message: string }> => {
   const response = await api.get('/api/health');
   return response.data;
+};
+
+/**
+ * YouTube 搜索 Hook
+ * 封装了 useRequest，提供搜索功能
+ */
+export const useSearchChannels = () => {
+  return useRequest(
+    searchChannelsService,
+    defaultOptions
+  );
+};
+
+/**
+ * 频道详情获取 Hook
+ * 封装了 useRequest，提供频道详情获取功能
+ */
+export const useChannelDetail = () => {
+  return useRequest(
+    getChannelDetailService,
+    defaultOptions
+  );
+};
+
+/**
+ * 健康检查 Hook
+ * 封装了 useRequest，提供健康检查功能
+ */
+export const useHealthCheck = () => {
+  return useRequest(
+    healthCheckService,
+    defaultOptions
+  );
 };
 
 export default api;
