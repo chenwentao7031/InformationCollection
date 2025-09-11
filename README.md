@@ -83,11 +83,11 @@ npm install
 YOUTUBE_API_KEY=your_youtube_api_key_here
 
 # 服务器配置
-PORT=3001
+PORT=5432
 FRONTEND_URL=http://localhost:5173
 
 # 前端配置
-VITE_API_URL=http://localhost:3001
+VITE_API_URL=http://localhost:5432
 ```
 
 ### 开发模式
@@ -100,7 +100,7 @@ npm run dev
 或者分别启动：
 
 ```bash
-# 启动后端服务器 (端口: 3001)
+# 启动后端服务器 (端口: 5432)
 npm run dev:server
 
 # 启动前端开发服务器 (端口: 5173)
