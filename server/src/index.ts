@@ -29,4 +29,5 @@ app.get("/api/health", (req: Request, res: Response) => {
 app.listen(PORT, () => {
   console.log(`✅ YouTube搜索后端服务已启动：http://localhost:${PORT}`);
   console.log(`🔍 API文档：http://localhost:${PORT}/api/health`);
+  console.log(APIKEY)
 });

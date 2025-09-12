@@ -1,11 +1,20 @@
 import { Router, Request, Response } from "express";
 import { taskManager } from "@/utils/TaskManager";
-import { getVideoList } from "@/apis/youtubeApi";
+import { getVideoList, getVideoListByYtsearch } from "@/apis/youtubeApi";
 import { YouTubeChannelItem } from "@/types";
 import { getVideoDetail } from "@/apis/youtubeApi";
 import { UserDetailResponse, ErrorResponse, UserDetailRequest } from "@/types";
 
 const router = Router();
+
+router.get(
+  "/api/search/video/ytsearch",
+  async (req: Request, res: Response<any>) => {
+    const { q } = req.query;
+    const data = await getVideoListByYtsearch({ q: q as string });
+    res.json(data);
+  }
+);
 
 // 🔍 搜索频道（博主）
 router.get(

@@ -134,3 +134,24 @@ export interface UserDetailResponse {
   results: ChannelWithEmails[];
   error?: string;
 }
+
+export interface VideoResponse {
+  type: string;
+  videoId: string;
+  url: string;
+  title: string;
+  description: string;
+  image: string;
+  thumbnail: string;
+  seconds: number;
+  timestamp: string;
+  duration: {
+    seconds: number;
+    timestamp: string;
+  };
+  views: number;
+  author: {
+    name: string;
+    url: string;
+  };
+}

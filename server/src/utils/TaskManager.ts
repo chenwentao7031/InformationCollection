@@ -123,7 +123,7 @@ class TaskManager {
         // 1. 获取视频列表
         const videoResponse = await getVideoList({
           q: task.query,
-          maxResults: 20, // 增加每次获取的数量以提高效率
+          maxResults: 50, // 增加每次获取的数量以提高效率
           ...(nextPageToken && { pageToken: nextPageToken }),
         });
 
