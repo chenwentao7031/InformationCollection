@@ -299,13 +299,86 @@ router.delete(
  * 获取任务管理器统计信息 (调试用)
  * GET /api/user-details/stats
  */
-router.get("/api/user-details/stats", (req: Request, res: Response) => {
-  const stats = taskManager.getTasksStats();
-  res.json({
-    message: "任务管理器统计信息",
-    ...stats,
-    timestamp: new Date().toISOString(),
-  });
+router.get("/api/user-details/stats", async (req: Request, res: Response) => {
+  try {
+    const stats = await taskManager.getTasksStats();
+    const quotaWarning = taskManager.checkQuotaWarning();
+    
+    res.json({
+      message: "任务管理器统计信息",
+      ...stats,
+      quotaWarning,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error("获取统计信息失败:", error.message);
+    res.status(500).json({ error: "获取统计信息失败：" + error.message });
+  }
+});
+
+/**
+ * 获取API配额使用情况
+ * GET /api/user-details/quota
+ */
+router.get("/api/user-details/quota", async (req: Request, res: Response) => {
+  try {
+    const apiStats = await taskManager.getApiStats();
+    const quotaWarning = taskManager.checkQuotaWarning();
+    
+    res.json({
+      message: "API配额使用情况",
+      ...apiStats,
+      warning: quotaWarning,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error("获取API配额信息失败:", error.message);
+    res.status(500).json({ error: "获取API配额信息失败：" + error.message });
+  }
+});
+
+/**
+ * Redis缓存健康检查
+ * GET /api/user-details/cache/health
+ */
+router.get("/api/user-details/cache/health", async (req: Request, res: Response) => {
+  try {
+    const healthStatus = await taskManager.getCacheHealthStatus();
+    
+    if (healthStatus.status === 'ok') {
+      res.json({
+        ...healthStatus,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      res.status(503).json({
+        ...healthStatus,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (error: any) {
+    console.error("缓存健康检查失败:", error.message);
+    res.status(500).json({ error: "缓存健康检查失败：" + error.message });
+  }
+});
+
+/**
+ * 清理过期缓存
+ * POST /api/user-details/cache/cleanup
+ */
+router.post("/api/user-details/cache/cleanup", async (req: Request, res: Response) => {
+  try {
+    const cleanedCount = await taskManager.cleanupExpiredCache();
+    
+    res.json({
+      message: "缓存清理完成",
+      cleanedCount,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error("缓存清理失败:", error.message);
+    res.status(500).json({ error: "缓存清理失败：" + error.message });
+  }
 });
 
 export default router;
