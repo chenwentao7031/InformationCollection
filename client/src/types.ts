@@ -93,3 +93,27 @@ export interface TikTokUserData {
   isVerified: boolean;
   contactEmail?: string[];
 }
+
+// 用户详情获取相关类型
+export interface ChannelWithEmails {
+  channelId: string;
+  title: string;
+  description: string;
+  customUrl?: string;
+  subscribers: string;
+  views: string;
+  videos: string;
+  thumbnail: string;
+  emails: string[];
+  keywords?: string;
+}
+
+export interface UserDetailTaskResponse {
+  taskId: string;
+  status: 'started' | 'running' | 'completed' | 'stopped' | 'error';
+  progress: number;
+  currentCount: number;
+  totalFound: number;
+  results: ChannelWithEmails[];
+  error?: string;
+}

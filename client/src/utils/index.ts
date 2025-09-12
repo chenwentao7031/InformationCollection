@@ -1,3 +1,5 @@
+// client/src/utils/index.ts
+
 export const formatNumber = (num: string | number) => {
   if (!num) return '0';
   const number = parseInt(num.toString());
@@ -9,7 +11,6 @@ export const formatNumber = (num: string | number) => {
   }
   return number.toString();
 };
-
 
 export const formatDate = (dateString: string) => {
   if (!dateString) return '未知时间';

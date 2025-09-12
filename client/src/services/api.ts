@@ -16,7 +16,7 @@ const api = axios.create({
 
 const defaultOptions = {
   manual: true,
-  onSuccess: (response: any) => {
+  onSuccess: () => {
     message.success('请求成功');
   },
   onError: (error: any) => {
@@ -82,6 +82,12 @@ export const pollUserDetailService = async (taskId: string): Promise<any> => {
   return response.data;
 };
 
+// 停止用户详情获取任务
+export const stopUserDetailService = async (taskId: string): Promise<any> => {
+  const response = await api.delete(`/api/user-details/stop/${taskId}`);
+  return response.data;
+};
+
 /**
  * YouTube 搜索 Hook
  * 封装了 useRequest，提供搜索功能
@@ -118,15 +124,38 @@ export const useHealthCheck = () => {
 export const useStartUserDetails = () => {
   return useRequest(
     startUserDetailService,
-    defaultOptions
+    {
+      ...defaultOptions,
+      onSuccess: () => {
+        message.success('任务已启动，正在获取数据...');
+      },
+    }
   );
 };
+
 export const usePollUserDetails = () => {
   return useRequest(
     pollUserDetailService,
     {
-      ...defaultOptions,
-      pollingInterval: 3000,
+      manual: true,
+      onError: (error: any) => {
+        console.error('轮询失败:', error);
+      },
+    }
+  );
+};
+
+export const useStopUserDetails = () => {
+  return useRequest(
+    stopUserDetailService,
+    {
+      manual: true,
+      onSuccess: () => {
+        message.success('任务已停止');
+      },
+      onError: (error: any) => {
+        message.error(`停止任务失败：${error.message}`);
+      },
     }
   );
 };

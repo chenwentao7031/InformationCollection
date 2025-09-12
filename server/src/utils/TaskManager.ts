@@ -115,39 +115,54 @@ class TaskManager {
    */
   private async processTask(task: UserDetailTask) {
     let nextPageToken: string | undefined = undefined;
-    const uniqueChannelIds = new Set<string>();
+    const allDiscoveredChannelIds = new Set<string>(); // 所有发现的频道ID
+    const processedChannelIds = new Set<string>(); // 已经处理过的频道ID
     
     try {
       while (task.status === 'running' && task.currentCount < task.count) {
-        // 1. 获取视频列表youtubeApi.get('/search', {
+        // 1. 获取视频列表
         const videoResponse = await getVideoList({
           q: task.query,
-          maxResults: 5,
+          maxResults: 20, // 增加每次获取的数量以提高效率
           ...(nextPageToken && { pageToken: nextPageToken }),
-        })
-
+        });
 
         const videos: YouTubeChannelItem[] = videoResponse?.items || [];
         nextPageToken = videoResponse?.nextPageToken;
 
-        // 2. 提取并去重频道ID
+        // 2. 提取新的频道ID（只处理未处理过的）
+        const newChannelIds: string[] = [];
         for (const video of videos) {
           if (video.snippet?.channelId) {
-            uniqueChannelIds.add(video.snippet.channelId);
+            allDiscoveredChannelIds.add(video.snippet.channelId);
+            // 只处理之前没有处理过的频道ID
+            if (!processedChannelIds.has(video.snippet.channelId)) {
+              newChannelIds.push(video.snippet.channelId);
+              processedChannelIds.add(video.snippet.channelId);
+            }
           }
         }
-        console.log(uniqueChannelIds)
-        // 3. 批量获取频道详情
-        const channelIds = Array.from(uniqueChannelIds).slice(task.results.length);
+
+        console.log(`新频道: ${newChannelIds.length}, 总发现: ${allDiscoveredChannelIds.size}, 已处理: ${processedChannelIds.size}`);
+        
+        // 3. 如果没有新的频道ID，继续下一页或结束
+        if (newChannelIds.length === 0) {
+          if (!nextPageToken) {
+            console.log('没有更多页面，任务结束');
+            break;
+          }
+          console.log('当前页面没有新频道，继续下一页');
+          continue;
+        }
+
+        // 4. 批量获取新频道的详情
         const batchSize = 50; // YouTube API限制
 
-        for (let i = 0; i < channelIds.length && task.status === 'running'; i += batchSize) {
-          const batch = channelIds.slice(i, i + batchSize);
+        for (let i = 0; i < newChannelIds.length && task.status === 'running'; i += batchSize) {
+          const batch = newChannelIds.slice(i, i + batchSize);
           
           try {
             const channelResponse = await getChannelDetail(batch);
-            console.log(channelResponse)
-
             const channels: YouTubeChannelDetail[] = channelResponse.items || [];
             
             // 4. 处理频道数据
@@ -199,8 +214,9 @@ class TaskManager {
           }
         }
 
-        // 6. 如果没有更多页面或达到API限制，结束任务
-        if (!nextPageToken || uniqueChannelIds.size >= 1000) {
+        // 5. 如果没有更多页面或达到API限制，结束任务
+        if (!nextPageToken || allDiscoveredChannelIds.size >= 1000) {
+          console.log(`任务完成条件: nextPageToken=${!!nextPageToken}, 发现频道数=${allDiscoveredChannelIds.size}`);
           task.status = 'completed';
           task.progress = 100;
           break;
@@ -219,7 +235,8 @@ class TaskManager {
     } catch (error: any) {
       task.status = 'error';
       task.error = error.message;
-      console.error(`任务 ${task.taskId} 执行失败:`, error);
+      console.error(`${this.APIKEY}, 任务 ${task.taskId} 执行失败:`, error);
+      console.error();
     }
   }
 
