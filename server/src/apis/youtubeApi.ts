@@ -1,15 +1,20 @@
 import { it } from 'node:test';
 import youtubeApi from './youtubeRequest';
-import { VideoResponse } from '@/types';
+import { VideoResponse, YouTubeSearchResponse } from '@/types';
 
 const ytsearch = require('yt-search')
 
 const APIKEY = process.env.YOUTUBE_API_KEY;
+export const YT_SEARCH_PAGESIZE = 20;
 
-export const getVideoListByYtsearch = async (params: { q: string, type?: string, maxResults?: number, pageToken?: string }): Promise<VideoResponse> => {
-  const { q, type, maxResults, pageToken } = params;
-  const response = await ytsearch({ query: q, type: 'channel'});
-  console.log(response)
+/**
+ * pageStart 1, pageEnd 1 这样为1页数据，20条
+ * @param params { q: string, type?: string, pageStart?: number 1 , pageEnd?: number 2 }
+ * @returns 
+ */
+export const getVideoListByYtsearch = async (params: { q: string, type?: string, pageStart?: number, pageEnd?: number }): Promise<VideoResponse[]> => {
+  const { q, type, pageStart, pageEnd } = params;
+  const response = await ytsearch({ query: q, type: 'channel' });
   return response?.videos;
 }
 
@@ -29,24 +34,28 @@ export const getVideoList = async (params: { q: string, type?: string, maxResult
   return response.data;
 }
 
-
+/**
+ * forHandle，forUsername 无法同时使用，并且只能精确查找一个用户
+ * @param channelIds 
+ * @returns 
+ */
 export const getChannelDetail = async (channelIds: string[]) => {
-    const response = await youtubeApi.get('/channels', {
-      params: {
-        part: 'snippet,statistics,brandingSettings',
-        id: channelIds.join(','),
-        key: APIKEY,
-      },
-    });
+  const response = await youtubeApi.get('/channels', {
+    params: {
+      part: 'snippet,statistics,brandingSettings',
+      id: channelIds.join(','),
+      key: APIKEY,
+    },
+  });
 
-    return response.data;
+  return response.data;
 }
 
-export const getVideoDetail = async (videoId: string) => {
+export const getVideoDetail = async (videoIds: string[]): Promise<YouTubeSearchResponse> => {
   const response = await youtubeApi.get('/videos', {
     params: {
       part: 'snippet,statistics',
-      id: videoId,
+      id: videoIds.join(','),
       key: APIKEY,
     },
   });

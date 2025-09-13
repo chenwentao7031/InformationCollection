@@ -18,7 +18,7 @@ router.get(
   }
 );
 
-// 🔍 搜索频道（博主）
+// 🔍 搜索频道（博主） 废弃，使用ytsearch代替
 router.get(
   "/api/search/video",
   async (
@@ -30,116 +30,9 @@ router.get(
     }>,
     res: Response<any>
   ) => {
-    const { q, type, current, pageSize } = req.query;
-
-    if (!q || typeof q !== "string") {
-      return res.status(400).json({ error: "请提供字符串类型的搜索关键词 q" });
-    }
-
-    try {
-      const data = await getVideoList({
-        q: q || "",
-      });
-      const videoIds: { channelId: string; videoId: string }[] = data.items
-        .filter((item: any) => item.id?.videoId)
-        .map((item: YouTubeChannelItem) => ({
-          channelId: item.snippet.channelId,
-          videoId: item.id.videoId,
-        }));
-
-      const videoDetails = await Promise.all(
-        videoIds.map((item) => getVideoDetail(item.videoId))
-      );
-
-      const videos = videoDetails.map((item) => {
-        const video = item.items[0];
-        return {
-          channelId: video.snippet.channelId,
-          publishedAt: video.snippet.publishedAt,
-          title: video.snippet.title,
-          description: video.snippet.description,
-          thumbnailUrl: video.snippet.thumbnails.default.url,
-          channelTitle: video.snippet.channelTitle,
-          viewCount: video.statistics.viewCount,
-          likeCount: video.statistics.likeCount,
-          commentCount: video.statistics.commentCount,
-          videoUrl: `https://www.youtube.com/watch?v=${video.id}`,
-        };
-      });
-
-      return res.json({
-        data: videos,
-      });
-
-      // const uniqueChannels = Array.from(
-      //   new Map(
-      //     channels.map(item => [item.channelId, item])
-      //   ).values()
-      // );
-
-      // const channelDetails = await Promise.all(uniqueChannels.map(item => getChannelDetail(item.channelId)));
-
-      // const emailChannels: any[] = [];
-
-      // const filteredChannelDetails = channelDetails.map((channel: any) => {
-      //   const { items } = channel;
-      //   if (!items || items.length === 0) return null;
-
-      //   const item = items[0];
-      //   return {
-      //     snippet: item.snippet,
-      //     statistics: item.statistics,
-      //     brandingSettings: {
-      //       ...item.brandingSettings?.channel
-      //     }
-      //   };
-      // }).filter(Boolean).map((item: any) => {
-      //   const emails = findEmails([item?.snippet?.description, item?.snippet?.localized?.description || '', item?.brandingSettings?.description]);
-      //   const format ={
-      //     title: item?.snippet.title,
-      //     description: item?.snippet.description,
-      //     customUrl: item?.snippet.customUrl,
-      //     email: emails,
-      //     keywords: item?.brandingSettings.keywords,
-      //     ...item?.statistics,
-      //   }
-      //   if (emails.length > 0) {
-      //     emailChannels.push(format);
-      //   }
-      //   return format;
-      // });
-
-      // 只返回有邮箱的相关数据
-      // if (type === '1') {
-      //   res.json({
-      //     results: emailChannels,
-      //     count: emailChannels.length,
-      //     total: data.pageInfo?.totalResults,
-      //     query: q,
-      //   });
-      // } else if (type === '2') {
-      //   res.json({
-      //     query: q,
-      //     total: data.pageInfo?.totalResults || 0,
-      //     results: filteredChannelDetails,
-      //     count: emailChannels.length,
-      //   });
-      // } else {
-      //   res.json({
-      //     query: q,
-      //     origin: channels,
-      //     totalResults: data.pageInfo?.totalResults || 0,
-      //     results: uniqueChannels,
-      //     details: filteredChannelDetails,
-      //     channelDetails: channelDetails,
-      //     emailCount: emailChannels.length,
-      //     emailChannels: emailChannels
-      //   });
-      // }
-    } catch (err: any) {
-      console.error("❌ YouTube API 搜索失败:", err.message);
-      res.status(500).json({ error: "搜索失败：" + err.message });
-    }
+    res.json({
+      data: []
+    });
   }
 );
 

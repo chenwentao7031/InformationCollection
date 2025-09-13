@@ -45,10 +45,10 @@ export const findEmails = (texts: string[]): string[] => {
 
 /**
  * 从url中提取出channelId
- *  "https://youtube.com/@NickDiGiovanni"
+ *  "https://youtube.com/channel/UC1CFuWQyVvXtARiS1rqJOzg" 返回 UC1CFuWQyVvXtARiS1rqJOzg
  */
 export const extractChannelId = (url: string): string => {
-  const regex = /@(\w+)/;
-  const match = url.match(regex);
-  return match ? match[1] : '';
+  const regex2 = /\/channel\/(\w+)/;
+  const match2 = url.match(regex2);
+  return match2 ? match2[1] : '';
 }
