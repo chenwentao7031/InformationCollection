@@ -50,6 +50,7 @@ export interface YouTubeChannelDetail {
     channel?: {
       description?: string;
       keywords?: string;
+      country?: string;
     };
   };
 }
@@ -102,6 +103,7 @@ export interface ChannelWithEmails {
   thumbnail: string;
   emails: string[];
   keywords?: string;
+  country?: string;
 }
 
 export interface UserDetailTask {
@@ -116,7 +118,6 @@ export interface UserDetailTask {
   results: ChannelWithEmails[];
   error?: string;
   startTime: number;
-  nextPageToken?: string;
 }
 
 export interface UserDetailRequest {

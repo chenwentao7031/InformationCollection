@@ -12,6 +12,7 @@ export const exportToExcel = (data: ChannelData[], filename?: string) => {
     '序号': index + 1,
     '频道名称': row.title || '未知',
     '联系邮箱': (row.email || []).join(', '),
+    '国家': row.country || '',
     '订阅数': row.subscriberCount || '0',
     '总观看数': row.viewCount || '0',
     '视频数': row.videoCount || '0',
@@ -30,6 +31,7 @@ export const exportToExcel = (data: ChannelData[], filename?: string) => {
     { wch: 6 },   // 序号
     { wch: 30 },  // 频道名称
     { wch: 40 },  // 联系邮箱
+    { wch: 12 },  // 联系邮箱
     { wch: 12 },  // 订阅数
     { wch: 15 },  // 总观看数
     { wch: 10 },  // 视频数

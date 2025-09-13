@@ -16,7 +16,7 @@ import {
 } from 'antd';
 import { ExportOutlined, EyeOutlined, StopOutlined, MailOutlined } from '@ant-design/icons';
 import { exportToExcel } from '@/utils/excel';
-import { ChannelWithEmails, UserDetailTaskResponse } from '@/types';
+import { ChannelWithEmails, UserDetailResponse, UserDetailTaskResponse } from '@/types';
 import { useStartUserDetails, usePollUserDetails, useStopUserDetails } from '@/services/api';
 import { formatNumber } from '@/utils';
 
@@ -40,7 +40,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
 }) => {
   const [form] = Form.useForm<ExportFormData>();
   const [exporting, setExporting] = useState(false);
-  const [taskData, setTaskData] = useState<UserDetailTaskResponse | null>(null);
+  const [taskData, setTaskData] = useState<UserDetailResponse | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,6 +81,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
     pollingRef.current = setInterval(async () => {
       try {
         const result = await pollUserDetail(taskId);
+        console.log(result)
         if (result) {
           setTaskData(result);
         }
@@ -139,6 +140,13 @@ const ExportModal: React.FC<ExportModalProps> = ({
       render: (text: string) => (
         <Text strong style={{ fontSize: '14px' }}>{text}</Text>
       ),
+    },
+    {
+      title: '国家',
+      dataIndex: 'country',
+      key: 'country',
+      width: 100,
+      render: (country: string) => country || '无',
     },
     {
       title: '自定义URL',
@@ -229,6 +237,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
         customUrl: channel.customUrl || '',
         keywords: channel.keywords || '',
         description: channel.description,
+        country: channel.country || '',
       }));
 
       console.log('Export data:', exportData); // 调试用
@@ -347,6 +356,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
 
           <Form.Item label="获取数量" name="exportCount">
             <Select style={{ width: 120 }}>
+              <Select.Option value={1}>1 条</Select.Option>
               <Select.Option value={10}>10 条</Select.Option>
               <Select.Option value={50}>50 条</Select.Option>
               <Select.Option value={100}>100 条</Select.Option>

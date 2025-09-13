@@ -170,12 +170,57 @@ npm start
 # 或使用 PM2 等进程管理器
 ```
 
+## 服务器配置
+
+### 当前项目需求
+- **Node.js**: 16+ (推荐 18.x)
+- **内存**: 最少 2GB RAM
+- **存储**: 最少 5GB 可用空间
+- **网络**: 稳定的互联网连接
+
+### 未来扩展需求 (数据库 + Redis)
+- **内存**: 最少 8GB RAM (推荐 16GB+)
+- **存储**: SSD 最少 100GB
+- **CPU**: 4核心以上
+- **数据库**: PostgreSQL 13+ 或 MySQL 8.0+
+- **缓存**: Redis 6.0+
+
+详细配置请参考 [SERVER_CONFIG.md](./SERVER_CONFIG.md)
+
+## 部署方式
+
+### 1. 本地部署
+```bash
+# 开发模式
+./deploy.sh dev
+
+# 生产模式
+./deploy.sh prod
+```
+
+### 2. Docker 部署
+```bash
+# 构建并启动
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+```
+
+### 3. 云服务部署
+支持 AWS、阿里云、腾讯云等主流云服务商，详细配置请参考服务器配置文档。
+
 ## 注意事项
 
 1. 需要申请 YouTube Data API v3 密钥
 2. 确保 API 密钥有足够的配额
 3. 前端和后端需要同时运行才能正常使用
 4. 建议在生产环境中配置 HTTPS
+5. 生产环境建议使用 PM2 进行进程管理
+6. 定期备份数据库和重要配置文件
 
 ## 许可证
 

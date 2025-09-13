@@ -297,6 +297,7 @@ class TaskManager {
                       channel.snippet.thumbnails.default
                         .url,
                     emails: emails,
+                    country: channel.brandingSettings?.channel?.country || '',
                     keywords:
                       channel.brandingSettings?.channel
                         ?.keywords,

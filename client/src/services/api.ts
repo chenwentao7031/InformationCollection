@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
-import { SearchResponse, ChannelDetailResult, YtsearchResponse } from '@/types';
+import { SearchResponse, ChannelDetailResult, YtsearchResponse, UserDetailResponse } from '@/types';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5432';
 
@@ -77,7 +77,7 @@ export const startUserDetailService = async (query: string, type: string, count:
 };
 
 // 轮询用户信息列表
-export const pollUserDetailService = async (taskId: string): Promise<any> => {
+export const pollUserDetailService = async (taskId: string): Promise<UserDetailResponse> => {
   const response = await api.get(`/api/user-details/status/${taskId}`);
   return response.data;
 };

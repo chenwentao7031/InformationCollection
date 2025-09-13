@@ -40,6 +40,7 @@ export interface ChannelData {
   customUrl?: string;
   email: string[];
   keywords?: string;
+  country: string;
   subscriberCount: string;
   viewCount: string;
   videoCount: string;
@@ -106,6 +107,7 @@ export interface ChannelWithEmails {
   thumbnail: string;
   emails: string[];
   keywords?: string;
+  country?: string;
 }
 
 export interface UserDetailTaskResponse {
@@ -146,4 +148,14 @@ export interface YtsearchVideo {
 
 export interface YtsearchResponse {
   data: YtsearchVideo[];
+}
+
+export interface UserDetailResponse {
+  results: ChannelWithEmails[];
+  taskId: string,
+  status: 'started' | 'running' | 'completed' | 'stopped' | 'error';
+  progress: number,
+  currentCount: number,
+  totalFound: number,
+  error: string,
 }
