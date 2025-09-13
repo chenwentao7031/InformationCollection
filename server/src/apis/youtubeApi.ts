@@ -1,3 +1,4 @@
+import { it } from 'node:test';
 import youtubeApi from './youtubeRequest';
 import { VideoResponse } from '@/types';
 
@@ -7,7 +8,7 @@ const APIKEY = process.env.YOUTUBE_API_KEY;
 
 export const getVideoListByYtsearch = async (params: { q: string, type?: string, maxResults?: number, pageToken?: string }): Promise<VideoResponse> => {
   const { q, type, maxResults, pageToken } = params;
-  const response = await ytsearch({ query: 'foods', type: 'channel'});
+  const response = await ytsearch({ query: q, type: 'channel'});
   console.log(response)
   return response?.videos;
 }

@@ -42,3 +42,13 @@ export const findEmails = (texts: string[]): string[] => {
   // 转换Set为数组并返回
   return Array.from(allEmails);
 }
+
+/**
+ * 从url中提取出channelId
+ *  "https://youtube.com/@NickDiGiovanni"
+ */
+export const extractChannelId = (url: string): string => {
+  const regex = /@(\w+)/;
+  const match = url.match(regex);
+  return match ? match[1] : '';
+}

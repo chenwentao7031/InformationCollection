@@ -13,8 +13,8 @@ import {
   Avatar,
   Tag,
 } from 'antd';
-import { SearchOutlined, ExportOutlined, PlayCircleOutlined, EyeOutlined, LikeOutlined, MessageOutlined } from '@ant-design/icons';
-import { useSearchChannels } from '@/services/api';
+import { SearchOutlined, ExportOutlined, PlayCircleOutlined, EyeOutlined, LikeOutlined, MessageOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { useYtsearch } from '@/services/api';
 import { VideoData } from '@/types';
 import ExportModal from './ExportModal';
 
@@ -29,22 +29,7 @@ const YouTubeSearch: React.FC = () => {
     data: searchResults,
     loading,
     run: runSearch,
-  } = useSearchChannels();
-
-  // 处理搜索数据
-  const videoList: VideoData[] = searchResults?.data?.map((video, index) => ({
-    key: index,
-    channelId: video.channelId || '',
-    publishedAt: video.publishedAt || '',
-    title: video.title || '未知标题',
-    description: video.description || '',
-    thumbnailUrl: video.thumbnailUrl || '',
-    channelTitle: video.channelTitle || '未知频道',
-    viewCount: video.viewCount || '0',
-    likeCount: video.likeCount || '0',
-    commentCount: video.commentCount || '0',
-    videoUrl: video.videoUrl || '',
-  })) || [];
+  } = useYtsearch();
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {
@@ -73,7 +58,7 @@ const YouTubeSearch: React.FC = () => {
 
   // 打开导出Modal
   const handleOpenExportModal = () => {
-    if (videoList.length === 0) {
+    if (searchResults?.data?.length === 0) {
       message.warning('没有数据可以导出');
       return;
     }
@@ -135,31 +120,22 @@ const YouTubeSearch: React.FC = () => {
       {/* 搜索结果 */}
       {searchResults && !loading && (
         <Card
-          title={
-            <Space>
-              <Text strong style={{ fontSize: '18px' }}>
-                YouTube 搜索结果: {videoList.length} 个视频
-              </Text>
-            </Space>
-          }
           extra={
             <Button
               type="primary"
               icon={<ExportOutlined />}
               onClick={handleOpenExportModal}
-              disabled={!videoList.length}
+              disabled={!searchResults?.data?.length} 
             >
               导出Excel
             </Button>
           }
         >
-          {videoList.length > 0 ? (
+          {searchResults?.data?.length > 0 ? (
             <List
               itemLayout="vertical"
-              dataSource={videoList}
+              dataSource={searchResults?.data || []}
               pagination={{
-                showSizeChanger: true,
-                showQuickJumper: true,
                 showTotal: (total, range) =>
                   `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
                 pageSizeOptions: ['5', '10', '20', '50'],
@@ -167,12 +143,12 @@ const YouTubeSearch: React.FC = () => {
               }}
               renderItem={(video) => (
                 <List.Item
-                  key={video.key}
+                  key={video.videoId}
                   actions={[
                     <Button
                       type="link"
                       icon={<PlayCircleOutlined />}
-                      onClick={() => openVideo(video.videoUrl)}
+                      onClick={() => openVideo(video.url)}
                     >
                       观看视频
                     </Button>
@@ -181,7 +157,7 @@ const YouTubeSearch: React.FC = () => {
                     <img
                       width={200}
                       alt={video.title}
-                      src={video.thumbnailUrl}
+                      src={video.thumbnail}
                       style={{ borderRadius: 8 }}
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x150?text=No+Image';
@@ -194,24 +170,16 @@ const YouTubeSearch: React.FC = () => {
                     title={
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>
                         <Text strong style={{ fontSize: '16px' }}>{video.title}</Text>
-                        <Text type="secondary">{video.channelTitle}</Text>
+                        <a type="secondary" href={video.author.url} target="_blank">{video.author.name}</a>
                       </Space>
                     }
                     description={
                       <Space direction="vertical" size="small" style={{ width: '100%' }}>
                         <Space wrap>
                           <Tag icon={<EyeOutlined />} color="blue">
-                            {formatNumber(video.viewCount)} 观看
+                            {formatNumber(video.views)} 观看
                           </Tag>
-                          <Tag icon={<LikeOutlined />} color="red">
-                            {formatNumber(video.likeCount)} 点赞
-                          </Tag>
-                          <Tag icon={<MessageOutlined />} color="green">
-                            {formatNumber(video.commentCount)} 评论
-                          </Tag>
-                          <Tag color="default">
-                            {formatDate(video.publishedAt)}
-                          </Tag>
+                          <Tag icon={<ClockCircleOutlined />} color="red">{video.ago}</Tag>
                         </Space>
                         <Paragraph
                           ellipsis={{ rows: 2, expandable: true, symbol: '更多' }}

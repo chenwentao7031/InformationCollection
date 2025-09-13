@@ -117,3 +117,33 @@ export interface UserDetailTaskResponse {
   results: ChannelWithEmails[];
   error?: string;
 }
+
+export interface YtsearchRequest {
+  q: string;
+}
+
+export interface YtsearchVideo {
+  type: string;
+  videoId: string;
+  url: string;
+  title: string;
+  description: string;
+  image: string;
+  thumbnail: string;
+  seconds: number;
+  timestamp: string;
+  duration: {
+    seconds: number;
+    timestamp: string;
+  };
+  ago: string;
+  views: number;
+  author: {
+    name: string;
+    url: string;
+  };
+}
+
+export interface YtsearchResponse {
+  data: YtsearchVideo[];
+}

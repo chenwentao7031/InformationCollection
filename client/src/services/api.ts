@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
-import { SearchResponse, ChannelDetailResult } from '@/types';
+import { SearchResponse, ChannelDetailResult, YtsearchResponse } from '@/types';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5432';
 
@@ -88,6 +88,16 @@ export const stopUserDetailService = async (taskId: string): Promise<any> => {
   return response.data;
 };
 
+// ytsearch
+export const ytsearchService = async (query: string): Promise<YtsearchResponse> => {
+  const response = await api.get(`/api/search/video/ytsearch`, {
+    params: {
+      q: query
+    }
+  });
+  return response.data;
+};
+
 /**
  * YouTube 搜索 Hook
  * 封装了 useRequest，提供搜索功能
@@ -98,6 +108,17 @@ export const useSearchChannels = () => {
     defaultOptions
   );
 };
+
+/**
+ * ytsearch 替换useSearchChannels，免配额消耗
+ */
+export const useYtsearch = () => {
+  return useRequest(
+    ytsearchService,
+    defaultOptions
+  );
+};
+
 
 /**
  * 频道详情获取 Hook
@@ -121,6 +142,9 @@ export const useHealthCheck = () => {
   );
 };
 
+/**
+ * 开启用户详情获取任务
+ */
 export const useStartUserDetails = () => {
   return useRequest(
     startUserDetailService,
@@ -133,6 +157,9 @@ export const useStartUserDetails = () => {
   );
 };
 
+/**
+ * 轮询用户详情获取任务
+ */
 export const usePollUserDetails = () => {
   return useRequest(
     pollUserDetailService,
@@ -145,6 +172,9 @@ export const usePollUserDetails = () => {
   );
 };
 
+/**
+ * 停止用户详情获取任务
+ */
 export const useStopUserDetails = () => {
   return useRequest(
     stopUserDetailService,

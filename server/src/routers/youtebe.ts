@@ -12,7 +12,9 @@ router.get(
   async (req: Request, res: Response<any>) => {
     const { q } = req.query;
     const data = await getVideoListByYtsearch({ q: q as string });
-    res.json(data);
+    res.json({
+      data
+    });
   }
 );
 
@@ -140,17 +142,6 @@ router.get(
     }
   }
 );
-
-/**
- * 获取用户详情
- * params: { q: string, type: '1' | '2', count: number }
- * 1. 根据查询参数 q 获取视频列表
- * 2. 根据视频列表过滤获取channelId, 需要去重
- * 3. 根据channelId获取频道详情，根据type 为 1 过滤有邮箱的channel，2的话全部返回，筛选邮箱使用：findEmails([item?.snippet?.description, item?.snippet?.localized?.description || '', item?.brandingSettings?.description])
- * 4. 返回count的条数，如果没到，则需要使用第一步请求返回的nextpagetoken拿下一页的数据在进行重新请求，直到达到count的条数
- * 5. 希望可以进行异步操作，不要阻塞主线程，用户进行轮询，每次返回最新结果，并且返回百分比，已有的count / count * 100
- * 6. 可以停止任务，返回之前的数据
- */
 
 /**
  * 启动用户详情获取任务
