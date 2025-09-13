@@ -18,7 +18,8 @@
     "clean": "npm run clean --workspaces",
     "clean:server": "npm run clean --workspace=server",
     "clean:client": "npm run clean --workspace=client",
-    "lint": "npm run lint --workspaces"
+    "lint": "npm run lint --workspaces",
+    "log:tail": "tail -f server/logs/error-$(date +%Y-%m-%d).log --workspace=server"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
