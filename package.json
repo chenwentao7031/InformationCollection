@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "YouTube频道搜索工具 - 前后端分离版本",
   "private": true,
+  "engines": {
+    "node": ">=20.18.0",
+    "npm": ">=10.0.0"
+  },
   "workspaces": [
     "client",
     "server"
@@ -19,7 +23,9 @@
     "clean:server": "npm run clean --workspace=server",
     "clean:client": "npm run clean --workspace=client",
     "lint": "npm run lint --workspaces",
-    "log:tail": "tail -f server/logs/error-$(date +%Y-%m-%d).log --workspace=server"
+    "log:tail": "tail -f server/logs/error-$(date +%Y-%m-%d).log --workspace=server",
+    "check-env": "node check-env.js",
+    "preinstall": "node check-env.js"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",

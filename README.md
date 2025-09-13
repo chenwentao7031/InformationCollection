@@ -64,8 +64,33 @@ InformationCollection/
 
 ### 环境要求
 
-- Node.js 16+ 
-- npm 或 yarn
+- Node.js 20.18+ 
+- npm 10+ 或 yarn
+
+#### Node.js 版本管理
+
+推荐使用 nvm 管理 Node.js 版本：
+
+```bash
+# 安装 nvm (如果未安装)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+# 使用项目指定的 Node.js 版本
+nvm use
+
+# 或者手动安装指定版本
+nvm install 20.18.0
+nvm use 20.18.0
+```
+
+### 环境检查
+
+在开始之前，建议先检查环境是否符合要求：
+
+```bash
+# 检查 Node.js 和 npm 版本
+npm run check-env
+```
 
 ### 安装依赖
 
@@ -173,7 +198,7 @@ npm start
 ## 服务器配置
 
 ### 当前项目需求
-- **Node.js**: 16+ (推荐 18.x)
+- **Node.js**: 20.18+ (推荐 20.x LTS)
 - **内存**: 最少 2GB RAM
 - **存储**: 最少 5GB 可用空间
 - **网络**: 稳定的互联网连接

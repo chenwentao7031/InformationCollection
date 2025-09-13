@@ -6,20 +6,22 @@ set -e
 
 echo "🚀 开始部署 YouTube 搜索工具..."
 
-# 检查 Node.js 版本
-check_node_version() {
-    if ! command -v node &> /dev/null; then
-        echo "❌ Node.js 未安装，请先安装 Node.js 16+"
+# 检查环境
+check_environment() {
+    echo "🔍 检查环境配置..."
+    
+    # 使用 Node.js 脚本进行详细检查
+    if command -v node &> /dev/null; then
+        node check-env.js
+        if [ $? -ne 0 ]; then
+            echo "❌ 环境检查失败，请按照提示安装正确的版本"
+            exit 1
+        fi
+    else
+        echo "❌ Node.js 未安装，请先安装 Node.js 20.18+"
+        echo "请访问 https://nodejs.org 下载最新版本"
         exit 1
     fi
-    
-    NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-    if [ "$NODE_VERSION" -lt 16 ]; then
-        echo "❌ Node.js 版本过低，需要 16+，当前版本: $(node -v)"
-        exit 1
-    fi
-    
-    echo "✅ Node.js 版本检查通过: $(node -v)"
 }
 
 # 安装依赖
@@ -102,7 +104,7 @@ main() {
     echo "    YouTube 搜索工具部署脚本"
     echo "=========================================="
     
-    check_node_version
+    check_environment
     check_env
     create_directories
     
