@@ -1,5 +1,6 @@
 {
   "name": "youtube-search-app",
+  "homepage": "https://chenwentao7031.github.io/InformationCollection",
   "version": "1.0.0",
   "description": "YouTube频道搜索工具 - 前后端分离版本",
   "private": true,
@@ -23,9 +24,7 @@
     "clean:server": "npm run clean --workspace=server",
     "clean:client": "npm run clean --workspace=client",
     "lint": "npm run lint --workspaces",
-    "log:tail": "tail -f server/logs/error-$(date +%Y-%m-%d).log --workspace=server",
-    "check-env": "node check-env.js",
-    "preinstall": "node check-env.js"
+    "log:tail": "tail -f server/logs/error-$(date +%Y-%m-%d).log --workspace=server"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
