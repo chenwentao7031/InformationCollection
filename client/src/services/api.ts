@@ -4,7 +4,7 @@ import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import { SearchResponse, ChannelDetailResult, YtsearchResponse, UserDetailResponse } from '@/types';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5432';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://166.88.55.186:5432';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
