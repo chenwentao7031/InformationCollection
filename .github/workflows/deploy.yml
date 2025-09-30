@@ -1,9 +1,11 @@
 # .github/workflows/deploy.yml
-name: Deploy React App to GitHub Pages
+name: Deploy YouTube Search App to GitHub Pages
 
 on:
   push:
     branches: [ main ]  # 仅当推送到 main 分支时触发
+  pull_request:
+    branches: [ main ]  # PR 时也构建以检查是否有问题
 
 permissions:
   contents: read
@@ -13,6 +15,10 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,23 +26,33 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18'
-          cache: 'yarn'
+          node-version: '20.18.0'
+          cache: 'npm'
 
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
+      - name: Install root dependencies
+        run: npm ci
 
-      - name: Build app
-        run: yarn build
+      - name: Install client dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Build client app
+        working-directory: ./client
+        env:
+          NODE_ENV: production
+        run: npm run build
 
       - name: Setup GitHub Pages
+        if: github.event_name == 'push'
         uses: actions/configure-pages@v4
 
       - name: Upload build artifact
+        if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./client/dist
 
       - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
         id: deployment
         uses: actions/deploy-pages@v4
